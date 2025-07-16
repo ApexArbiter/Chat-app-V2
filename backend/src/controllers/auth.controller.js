@@ -10,7 +10,7 @@ export const register = async (req, res) => {
         .status(400)
         .json({ message: "Password must be at least 6 characters" });
     }
-    const user = await UserModal.find({ email });
+    const user = await UserModal.findOne({ email });
     if (user) {
       return res.status(400).json({ message: user });
     }
@@ -26,13 +26,22 @@ export const register = async (req, res) => {
     });
 
     if(newUser){
-      generateToken()
+      generateToken(newUser._id,res)
       await newUser.save();
-      return res.status(200).json({ message: "User created successfully" });
-    }else{
+
+      return res.status(201).json({
+        _Id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        profilePic: newUser.profilePic,
+      });
+    } else {
       return res.status(400).json({ message: "User not created" });
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 export const login = async(req, res) => {
  try {
@@ -45,7 +54,7 @@ export const login = async(req, res) => {
   if(!isMatch){
      res.status(400).json({message:"wrong password"})
   }
-  generateToken()
+  generateToken(user._id,res)
   res.json({message:"user logoin"})
  } catch (error) {
   
