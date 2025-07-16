@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { generateToken } from "../utils/index.js";
+import UserModal from "../models/user.model.js";
 
 export const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -25,8 +26,8 @@ export const register = async (req, res) => {
       password: hashedPassword,
     });
 
-    if(newUser){
-      generateToken(newUser._id,res)
+    if (newUser) {
+      generateToken(newUser._id, res);
       await newUser.save();
 
       return res.status(201).json({
@@ -43,23 +44,37 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-export const login = async(req, res) => {
- try {
-  const {email,password}=req.body
-  const user = await UserModal.findOne({email})
-  if(!user){
-    res.status(400).json({message:"user not found"})
-  }
-  const isMatch=bcrypt.compare(password,user.password)
-  if(!isMatch){
-     res.status(400).json({message:"wrong password"})
-  }
-  generateToken(user._id,res)
-  res.json({message:"user logoin"})
- } catch (error) {
-  
- }
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
+    // Check if user exists
+    const user = await UserModal.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Compare passwords (await is required)
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Wrong password" });
+    }
+
+    // Generate token and send response
+    generateToken(user._id, res);
+    return res.status(200).json({
+      message: "User logged in",
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 export const logout = (req, res) => {
   res.send("signup");
